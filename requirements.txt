@@ -1,0 +1,10 @@
+fastapi[standard]
+langchain-core
+langchain-redis
+langchain-ollama
+langchain-groq
+redis
+aio-pika
+sqlalchemy
+psycopg2
+python-dotenv
