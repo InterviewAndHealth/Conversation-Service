@@ -1,8 +1,7 @@
-from fastapi import HTTPException
-
 from app import AZURE_REGION, SPEECH_PROVIDER
 from app.types.azure_response import AzureResponse
 from app.utils.azure import AzureTokenGenerator
+from app.utils.errors import BadRequestException, InternalServerErrorException
 
 
 class AzureService:
@@ -14,7 +13,7 @@ class AzureService:
     def _validate_azure_service(self):
         """Validate Azure service."""
         if SPEECH_PROVIDER.lower() != "azure":
-            raise HTTPException(status_code=400, detail="Azure service is not active.")
+            raise BadRequestException("Azure service is not active.")
 
     def generate_token(self) -> AzureResponse:
         """Generate token."""
@@ -22,6 +21,6 @@ class AzureService:
         token = self.azure_token_generator.generate_token()
 
         if not token:
-            raise HTTPException(status_code=500, detail="Failed to generate token.")
+            raise InternalServerErrorException("Failed to generate token.")
 
         return AzureResponse(token=token, region=AZURE_REGION)

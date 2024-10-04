@@ -21,6 +21,12 @@ class RedisService:
         STATUS = "status"
         """Namespace for status-related keys."""
 
+        JOB_DESCRIPTION = "job_description"
+        """Namespace for job description-related keys."""
+
+        RESUME = "resume"
+        """Namespace for resume-related keys."""
+
     class Status:
         """Status values for Redis keys."""
 
@@ -89,4 +95,30 @@ class RedisService:
     def get_status(key) -> Union[str, None]:
         """Get a status-related value from Redis."""
         raw = RedisService.getKeyWithNamespace(RedisService.Namespace.STATUS, key)
+        return raw.decode("utf-8") if raw else None
+
+    @staticmethod
+    def set_job_description(key, value) -> None:
+        """Set a job description-related value in Redis."""
+        RedisService.setKeyWithNamespace(
+            RedisService.Namespace.JOB_DESCRIPTION, key, value
+        )
+
+    @staticmethod
+    def get_job_description(key) -> ResponseT:
+        """Get a job description-related value from Redis."""
+        raw = RedisService.getKeyWithNamespace(
+            RedisService.Namespace.JOB_DESCRIPTION, key
+        )
+        return raw.decode("utf-8") if raw else None
+
+    @staticmethod
+    def set_resume(key, value) -> None:
+        """Set a resume-related value in Redis."""
+        RedisService.setKeyWithNamespace(RedisService.Namespace.RESUME, key, value)
+
+    @staticmethod
+    def get_resume(key) -> ResponseT:
+        """Get a resume-related value from Redis."""
+        raw = RedisService.getKeyWithNamespace(RedisService.Namespace.RESUME, key)
         return raw.decode("utf-8") if raw else None

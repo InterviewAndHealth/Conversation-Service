@@ -12,3 +12,11 @@ class ConversationResponse(BaseModel):
     @classmethod
     def from_message(cls, message: BaseMessage) -> "ConversationResponse":
         return cls(message=message.content, type=message.type)
+
+
+class InterviewDetailsResponse(BaseModel):
+    interview_id: str
+    """The interview ID."""
+
+    conversations: list[ConversationResponse]
+    """The conversations."""

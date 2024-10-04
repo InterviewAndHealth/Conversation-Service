@@ -33,6 +33,7 @@ SPEECH_PROVIDER = os.getenv("SPEECH_PROVIDER")
 AWS_REGION = os.getenv("AWS_REGION")
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+AWS_ROLE_ARN = os.getenv("AWS_ROLE_ARN")
 
 # Azure
 AZURE_KEY = os.getenv("AZURE_KEY")
@@ -73,6 +74,7 @@ if SPEECH_PROVIDER and SPEECH_PROVIDER.lower() == "aws":
             "AWS_REGION": AWS_REGION,
             "AWS_ACCESS_KEY_ID": AWS_ACCESS_KEY_ID,
             "AWS_SECRET_ACCESS_KEY": AWS_SECRET_ACCESS_KEY,
+            "AWS_ROLE_ARN": AWS_ROLE_ARN,
         }
     )
 

@@ -1,6 +1,6 @@
 import requests
 
-from app import AZURE_KEY, AZURE_REGION
+from app import AZURE_KEY, AZURE_REGION, SPEECH_PROVIDER
 
 
 class AzureTokenGenerator:
@@ -14,6 +14,8 @@ class AzureTokenGenerator:
         }
 
     def generate_token(self):
+        if SPEECH_PROVIDER.lower() != "azure":
+            return None
         try:
             response = requests.post(self.endpoint, headers=self.headers)
             response.raise_for_status()  # Raise an error for bad responses

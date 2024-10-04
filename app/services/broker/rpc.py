@@ -4,10 +4,10 @@ import logging
 import uuid
 
 import aio_pika
-from fastapi import HTTPException
 
 from app import RPC_QUEUE
 from app.services.broker import Broker
+from app.utils.errors import RequestTimeoutException
 
 
 class RPCService:
@@ -67,7 +67,7 @@ class RPCService:
 
             return await asyncio.wait_for(future, timeout)
         except asyncio.TimeoutError:
-            raise HTTPException(status_code=408, detail="Request timeout")
+            raise RequestTimeoutException()
         except Exception as err:
             logging.error(f"Failed to request data: {err}")
 

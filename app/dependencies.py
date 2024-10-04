@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import Header, HTTPException
+from fastapi import Header
 
 
 # Autorization header
