@@ -29,7 +29,6 @@ app = FastAPI(
     servers=[{"url": "/v1", "description": "Version 1"}],
 )
 
-app.mount("/v1", app_v1)
 
 app.add_middleware(
     CORSMiddleware,
@@ -38,6 +37,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.mount("/v1", app_v1)
 
 
 @app.get("/")

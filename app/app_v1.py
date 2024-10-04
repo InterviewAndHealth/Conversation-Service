@@ -16,11 +16,10 @@ app.include_router(interviews.router)
 app.include_router(aws.router)
 app.include_router(azure.router)
 
+app.add_exception_handler(BaseException, base_exception_handler)
+app.add_exception_handler(Exception, general_exception_handler)
+
 
 @app.get("/")
 async def root():
     return {"message": "Interviews API v1"}
-
-
-app.add_exception_handler(BaseException, base_exception_handler)
-app.add_exception_handler(Exception, general_exception_handler)
