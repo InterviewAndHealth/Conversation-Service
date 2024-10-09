@@ -9,3 +9,6 @@ sqlalchemy
 psycopg2
 python-dotenv
 boto3
+PyJWT
+aiohttp
+PyPDF2

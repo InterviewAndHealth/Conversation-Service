@@ -1,5 +1,4 @@
 import aiohttp
-import asyncio
 from PyPDF2 import PdfReader
 from io import BytesIO
 
