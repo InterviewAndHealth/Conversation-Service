@@ -1,7 +1,7 @@
 from app import AWS_REGION, SPEECH_PROVIDER
 from app.types.aws_response import AwsResponse
 from app.utils.aws import AwsCredentialsGenerator
-from app.utils.errors import BadRequestException, InternalServerErrorException
+from app.utils.errors import BadRequestException400, InternalServerErrorException500
 
 
 class AwsService:
@@ -13,7 +13,7 @@ class AwsService:
     def _validate_aws_service(self):
         """Validate AWS service."""
         if SPEECH_PROVIDER.lower() != "aws":
-            raise BadRequestException("AWS service is not active.")
+            raise BadRequestException400("AWS service is not active.")
 
     def generate_credentials(self, interview_id: str = "") -> AwsResponse:
         """Generate credentials."""
@@ -21,7 +21,7 @@ class AwsService:
         credentials = self.aws_credentials_generator.generate_credentials(interview_id)
 
         if not credentials:
-            raise InternalServerErrorException("Failed to generate credentials.")
+            raise InternalServerErrorException500("Failed to generate credentials.")
 
         return AwsResponse(
             accessKeyId=credentials.get("AccessKeyId"),

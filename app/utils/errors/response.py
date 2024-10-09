@@ -1,8 +1,8 @@
 from .exceptions import *
 
-BadRequestExceptionResponse = BadRequestException.response()
-UnauthorizedExceptionResponse = UnauthorizedException.response()
-NotFoundExceptionResponse = NotFoundException.response()
-RequestTimeoutExceptionResponse = RequestTimeoutException.response()
-InternalServerErrorExceptionResponse = InternalServerErrorException.response()
-ServiceUnavailableExceptionResponse = ServiceUnavailableException.response()
+BadRequestExceptionResponse = BadRequestException400.response()
+UnauthorizedExceptionResponse = UnauthorizedException401.response()
+NotFoundExceptionResponse = NotFoundException404.response()
+RequestTimeoutExceptionResponse = RequestTimeoutException408.response()
+InternalServerErrorExceptionResponse = InternalServerErrorException500.response()
+ServiceUnavailableExceptionResponse = ServiceUnavailableException503.response()

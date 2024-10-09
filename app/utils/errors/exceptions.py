@@ -24,34 +24,34 @@ class BaseException(Exception):
         return {self.status_code: {"description": self.message, "model": self.schema}}
 
 
-class BadRequestException(BaseException):
+class BadRequestException400(BaseException):
     def __init__(self, message="Bad request"):
         super().__init__(message, 400, "BadRequest", BadRequestExceptionSchema)
 
 
-class UnauthorizedException(BaseException):
+class UnauthorizedException401(BaseException):
     def __init__(self, message="Unauthorized"):
         super().__init__(message, 401, "Unauthorized", UnauthorizedExceptionSchema)
 
 
-class NotFoundException(BaseException):
+class NotFoundException404(BaseException):
     def __init__(self, message="Not found"):
         super().__init__(message, 404, "NotFound", NotFoundExceptionSchema)
 
 
-class RequestTimeoutException(BaseException):
+class RequestTimeoutException408(BaseException):
     def __init__(self, message="Request timeout"):
         super().__init__(message, 408, "RequestTimeout", RequestTimeoutExceptionSchema)
 
 
-class InternalServerErrorException(BaseException):
+class InternalServerErrorException500(BaseException):
     def __init__(self, message="Internal server error"):
         super().__init__(
             message, 500, "InternalServerError", InternalServerErrorExceptionSchema
         )
 
 
-class ServiceUnavailableException(BaseException):
+class ServiceUnavailableException503(BaseException):
     def __init__(self, message="Service unavailable"):
         super().__init__(
             message, 503, "ServiceUnavailable", ServiceUnavailableExceptionSchema

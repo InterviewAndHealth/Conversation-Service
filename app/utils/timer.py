@@ -4,7 +4,7 @@ from functools import wraps
 from app import INTERVIEW_DURATION
 from app.services.chat_history import ChatHistoryService
 from app.services.redis import RedisService
-from app.utils.errors import BadRequestException
+from app.utils.errors import BadRequestException400
 
 
 def _fetch_or_update_start_time(interview_id: str) -> float:
@@ -49,7 +49,7 @@ def timer(func):
         elapsed_time = _calculate_elapsed_time(interview_id)
 
         if _is_interview_ended(elapsed_time):
-            raise BadRequestException(
+            raise BadRequestException400(
                 "Interview has ended. Thank you for your time and responses."
             )
 

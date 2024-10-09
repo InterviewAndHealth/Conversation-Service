@@ -5,7 +5,7 @@ from app.services.chain import ChainService
 from app.services.chat_history import ChatHistoryService
 from app.services.redis import RedisService
 from app.types.message_response import MessageResponse
-from app.utils.errors import BadRequestException, NotFoundException
+from app.utils.errors import BadRequestException400, NotFoundException404
 
 
 class ChatService:
@@ -18,21 +18,14 @@ class ChatService:
     def __init__(
         self,
         interview_id: str,
-        job_description: str = None,
-        resume: str = None,
     ):
         self.interview_id = interview_id
-        self.job_description = job_description
-        self.resume = resume
 
-        if self.job_description is None or self.resume is None:
-            if not self.is_active():
-                raise NotFoundException("Interview not found.")
-            else:
-                self.job_description = RedisService.get_job_description(
-                    self.interview_id
-                )
-                self.resume = RedisService.get_resume(self.interview_id)
+        self.job_description = RedisService.get_job_description(self.interview_id)
+        self.resume = RedisService.get_resume(self.interview_id)
+
+        if not self.job_description or not self.resume:
+            raise NotFoundException404("Interview not found.")
 
         self.chain = ChainService(
             job_description=self.job_description,
@@ -70,7 +63,7 @@ class ChatService:
     def invoke(self, message: str) -> MessageResponse:
         """Invoke the chat service with a message."""
         if not self.is_active():
-            raise BadRequestException("Inactive interview.")
+            raise BadRequestException400("Inactive interview.")
 
         response = self.runnable.invoke(
             {self._INPUT_MESSAGES_KEY: message},
