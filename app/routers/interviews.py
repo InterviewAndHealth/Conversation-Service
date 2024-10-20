@@ -1,12 +1,16 @@
-from fastapi import APIRouter, Depends
+import asyncio
 from typing import Annotated
 
-from app.dependencies import authorize, authorize_interview
-from app.fakedata import job_desc, resume
+from fastapi import APIRouter, Depends
+
+from app import INTERVIEWS_SCHEDULE_RPC, USERS_RPC
+from app.dependencies import authorize
 from app.services.aws import AwsService
+from app.services.broker import RPCService
 from app.services.chat import ChatService
 from app.services.chat_history import ChatHistoryService
 from app.services.redis import RedisService
+from app.types.communications import RPCPayloadType
 from app.types.conversation_response import (
     ConversationResponse,
     InterviewDetailsResponse,
@@ -15,14 +19,12 @@ from app.types.message_request import MessageRequest
 from app.types.message_response import MessageResponse
 from app.utils.errors import (
     BadRequestException400,
-    BadRequestExceptionResponse,
+    BadRequestResponse,
     NotFoundException404,
-    NotFoundExceptionResponse,
+    NotFoundResponse,
 )
 from app.utils.pdf_text import fetch_pdf_text
 from app.utils.timer import timer
-from app.services.broker import RPCService
-from app import USERS_RPC, INTERVIEWS_SCHEDULE_RPC
 
 router = APIRouter(
     prefix="/conversations",
@@ -32,29 +34,27 @@ router = APIRouter(
 aws_service = AwsService()
 
 
-@router.post("/start/{interview_id}", responses={**BadRequestExceptionResponse})
+@router.post("/start/{interview_id}", responses={**BadRequestResponse})
 @timer
 async def start_conversation(
     interview_id: str, user_id: Annotated[str, Depends(authorize)]
 ) -> MessageResponse:
-    interview_details = await RPCService.request(
-        INTERVIEWS_SCHEDULE_RPC,
-        {
-            "type": "GET_INTERVIEW_DETAILS",
-            "data": {
-                "interviewId": interview_id,
-            },
-        },
-    )
 
-    resume_link = await RPCService.request(
-        USERS_RPC,
-        {
-            "type": "GET_USER_RESUME",
-            "data": {
-                "userId": user_id,
-            },
-        },
+    interview_details, resume_link = await asyncio.gather(
+        RPCService.request(
+            INTERVIEWS_SCHEDULE_RPC,
+            RPCService.build_request_payload(
+                RPCPayloadType.GET_INTERVIEW_DETAILS,
+                {"interviewId": interview_id},
+            ),
+        ),
+        RPCService.request(
+            USERS_RPC,
+            RPCService.build_request_payload(
+                RPCPayloadType.GET_USER_RESUME,
+                {"userId": user_id},
+            ),
+        ),
     )
 
     user_id_from_interview = interview_details.get("data").get("userid")
@@ -78,7 +78,7 @@ async def start_conversation(
 
 @router.post(
     "/continue/{interview_id}",
-    responses={**BadRequestExceptionResponse, **NotFoundExceptionResponse},
+    responses={**BadRequestResponse, **NotFoundResponse},
 )
 @timer
 async def continue_conversation(
@@ -90,7 +90,7 @@ async def continue_conversation(
     return chat_service.invoke(message.message)
 
 
-@router.get("/details/{interview_id}", responses={**NotFoundExceptionResponse})
+@router.get("/details/{interview_id}", responses={**NotFoundResponse})
 async def get_conversation(
     interview_id: str, user_id: Annotated[str, Depends(authorize)]
 ) -> InterviewDetailsResponse:

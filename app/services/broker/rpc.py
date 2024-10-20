@@ -14,6 +14,36 @@ class RPCService:
     """RPC service"""
 
     @staticmethod
+    def build_request_payload(
+        type: str,
+        data: dict,
+    ) -> dict:
+        """
+        Build a request payload
+
+        Parameters
+        ----------
+        type : str
+            The request type
+        data : dict
+            The request data
+
+        Returns
+        -------
+        dict
+            The request payload
+
+        Examples
+        --------
+        >>> RPCService.build_request_payload("type", {"key": "value"})
+        """
+
+        return {
+            "type": type,
+            "data": data,
+        }
+
+    @staticmethod
     async def request(
         service_rpc: str,
         request_payload: dict,
