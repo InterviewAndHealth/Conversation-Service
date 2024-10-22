@@ -1,4 +1,5 @@
 import time
+from typing import List
 
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import PromptTemplate
@@ -16,26 +17,40 @@ from app.types.interview_report_response import (
 from app.utils.errors.exceptions import BadRequestException400, NotFoundException404
 from app.utils.timer import is_interview_ended
 
-_system_message = """You are an experienced interviewer. You have taken the interview of the candidate based on the job description and resume. Now, you are assessing the candidate's response to a question. Provide feedback based on the job description and resume. Provide feedback like you are the real person who is talking to the candidate. Keep the feedback professional and detailed. Mention all positive and negative points in the feedback. Provide feedback in a way that the candidate can improve their response. Refer to candidate by You or Your in the feedback. Also provide a score to the candidate's response between 0 to 100 upto 4 decimal places."""
+_individual_feedback_message = """You are an experienced interviewer. You have taken the interview of the candidate based on the job description and resume. Now, you are assessing the candidate's response to a question. Provide feedback based on the job description and resume. Provide feedback like you are the real person who is talking to the candidate. Keep the feedback professional and detailed. Mention all positive and negative points in the feedback. Provide feedback in a way that the candidate can improve their response. Refer to candidate by You or Your in the feedback. Also provide a score to the candidate's response between 0 to 100 upto 4 decimal places."""
+
+_overall_feedback_message = """You are an experienced interviewer. You have taken the interview of the candidate based on the job description and resume. Following are the feedbacks provided by you. Now, you are assessing the candidate's overall performance. Provide overall feedback keeping in mind all feedbacks provided by you. Keep feedback professional and detailed. Refer to candidate by You or Your in the feedback."""
 
 
 class FeedbackResponse(BaseModel):
-    feedback: str = Field(
-        description="The detailed feedback for the candidate's response."
-    )
-    score: float = Field(
-        description="The score between 0 to 100 upto 4 decimal places."
-    )
+    feedback: str = Field(description="The feedback")
+    score: float = Field(description="The score")
+
+
+class OverallFeedbackResponse(BaseModel):
+    feedback: str = Field(description="The feedback")
 
 
 _feedback_request_parser = JsonOutputParser(pydantic_object=FeedbackResponse)
+_overall_feedback_request_parser = JsonOutputParser(
+    pydantic_object=OverallFeedbackResponse
+)
 
-_prompt = PromptTemplate(
-    template=_system_message
+_individual_prompt = PromptTemplate(
+    template=_individual_feedback_message
     + "\n{format_instructions}\nJob Description: {job_description}\nResume: {resume}\nQuestion: {question}\nAnswer: {answer}",
     input_variables=["job_description", "resume", "question", "answer"],
     partial_variables={
         "format_instructions": _feedback_request_parser.get_format_instructions()
+    },
+)
+
+_overall_prompt = PromptTemplate(
+    template=_overall_feedback_message
+    + "\n{format_instructions}\nJob Description: {job_description}\nResume: {resume}\nFeedbacks: {feedbacks}",
+    input_variables=["job_description", "resume", "feedbacks"],
+    partial_variables={
+        "format_instructions": _overall_feedback_request_parser.get_format_instructions()
     },
 )
 
@@ -69,23 +84,51 @@ class FeedbackService:
         self, question: str, answer: str
     ) -> IndividualInterviewReportResponse:
         """Generate feedback based on the job description and resume."""
-        chain = _prompt | _llm | _feedback_request_parser
+        chain = _individual_prompt | _llm | _feedback_request_parser
 
-        response = chain.invoke(
-            {
-                "job_description": self.job_description,
-                "resume": self.resume,
-                "question": question,
-                "answer": answer,
-            }
-        )
+        feedback = ""
+        score = 0.0
+
+        while not feedback or score == 0.0:
+            response = chain.invoke(
+                {
+                    "job_description": self.job_description,
+                    "resume": self.resume,
+                    "question": question,
+                    "answer": answer,
+                }
+            )
+
+            feedback = response.get("feedback", "")
+            score = response.get("score", 0.0)
 
         return IndividualInterviewReportResponse(
             question=question,
             answer=answer,
-            feedback=response.get("feedback"),
-            score=response.get("score"),
+            feedback=feedback,
+            score=score,
         )
+
+    def _get_overall_feedback(
+        self, feedbacks: List[IndividualInterviewReportResponse]
+    ) -> str:
+        """Generate overall feedback based on the job description and resume."""
+        chain = _overall_prompt | _llm | _overall_feedback_request_parser
+
+        feedback = ""
+
+        while not feedback:
+            response = chain.invoke(
+                {
+                    "job_description": self.job_description,
+                    "resume": self.resume,
+                    "feedbacks": [feedback.feedback for feedback in feedbacks],
+                }
+            )
+
+            feedback = response.get("feedback", "")
+
+        return feedback
 
     def _get_feedback(self) -> InterviewReportResponse:
         """Generate feedback for all questions and answers."""
@@ -110,10 +153,13 @@ class FeedbackService:
 
         final_score = sum([feedback.score for feedback in feedbacks]) / len(feedbacks)
 
+        overall_feedback = self._get_overall_feedback(feedbacks)
+
         return InterviewReportResponse(
             interview_id=self.interview_id,
             feedbacks=feedbacks,
-            score=final_score,
+            final_feedback=overall_feedback,
+            final_score=final_score,
         )
 
     def get_feedback(self) -> InterviewReportResponse:

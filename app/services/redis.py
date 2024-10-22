@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 from typing import Union
 
 from redis import Redis
@@ -14,7 +14,7 @@ class RedisService:
     __client = Union[Redis, None]
     """Redis client instance."""
 
-    class Namespace(Enum):
+    class Namespace(StrEnum):
         """Namespace for Redis keys."""
 
         TIME = "time"
@@ -32,10 +32,7 @@ class RedisService:
         FEEDBACK = "feedback"
         """Namespace for feedback-related keys."""
 
-        def __str__(self):
-            return str(self.value)
-
-    class Status(Enum):
+    class Status(StrEnum):
         """Status values for Redis keys."""
 
         ACTIVE = "active"
@@ -43,9 +40,6 @@ class RedisService:
 
         INACTIVE = "inactive"
         """Inactive status."""
-
-        def __str__(self):
-            return str(self.value)
 
     @staticmethod
     def connect():

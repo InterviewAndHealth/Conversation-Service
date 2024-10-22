@@ -44,14 +44,18 @@ class InterviewReportResponse(BaseModel):
     feedbacks: list[IndividualInterviewReportResponse]
     """The individual feedback."""
 
-    score: float
+    final_feedback: str
+    """The overall feedback."""
+
+    final_score: float
     """The final score."""
 
     def dict(self) -> dict:
         return {
             "interview_id": self.interview_id,
             "feedbacks": [feedback.dict() for feedback in self.feedbacks],
-            "score": self.score,
+            "final_feedback": self.final_feedback,
+            "final_score": self.final_score,
         }
 
     def serialize(self) -> str:
@@ -65,7 +69,8 @@ class InterviewReportResponse(BaseModel):
                 IndividualInterviewReportResponse.from_dict(feedback)
                 for feedback in data["feedbacks"]
             ],
-            score=data["score"],
+            final_feedback=data["final_feedback"],
+            final_score=data["final_score"],
         )
 
     @classmethod
