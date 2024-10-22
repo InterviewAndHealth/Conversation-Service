@@ -16,19 +16,26 @@ from app.types.interview_report_response import (
 from app.utils.errors.exceptions import BadRequestException400, NotFoundException404
 from app.utils.timer import is_interview_ended
 
+_system_message = """You are an experienced interviewer. You have taken the interview of the candidate based on the job description and resume. Now, you are assessing the candidate's response to a question. Provide feedback based on the job description and resume. Provide feedback like you are the real person who is talking to the candidate. Keep the feedback professional and detailed. Mention all positive and negative points in the feedback. Provide feedback in a way that the candidate can improve their response. Refer to candidate by You or Your in the feedback. Also provide a score to the candidate's response between 0 to 100 upto 4 decimal places."""
+
 
 class FeedbackResponse(BaseModel):
-    feedback: str = Field(..., title="Feedback", description="The feedback.")
-    score: float = Field(..., title="Score", description="The score.")
+    feedback: str = Field(
+        description="The detailed feedback for the candidate's response."
+    )
+    score: float = Field(
+        description="The score between 0 to 100 upto 4 decimal places."
+    )
 
 
-feedback_request_parser = JsonOutputParser(pydantic_object=FeedbackResponse)
+_feedback_request_parser = JsonOutputParser(pydantic_object=FeedbackResponse)
 
-prompt = PromptTemplate(
-    template="You are assessing a candidate's response to a question. Provide feedback based on the job description and resume.\n{format_instructions}\nJob Description: {job_description}\nResume: {resume}\nQuestion: {question}\nAnswer: {answer}",
+_prompt = PromptTemplate(
+    template=_system_message
+    + "\n{format_instructions}\nJob Description: {job_description}\nResume: {resume}\nQuestion: {question}\nAnswer: {answer}",
     input_variables=["job_description", "resume", "question", "answer"],
     partial_variables={
-        "format_instructions": feedback_request_parser.get_format_instructions()
+        "format_instructions": _feedback_request_parser.get_format_instructions()
     },
 )
 
@@ -40,7 +47,7 @@ _llm = (
 
 
 class FeedbackService:
-    """Service for handling feedback operations, including conducting interviews and generating feedback."""
+    """Service for handling feedback operations."""
 
     def __init__(self, interview_id: str):
         start_time = RedisService.get_time(interview_id)
@@ -62,7 +69,7 @@ class FeedbackService:
         self, question: str, answer: str
     ) -> IndividualInterviewReportResponse:
         """Generate feedback based on the job description and resume."""
-        chain = prompt | _llm | feedback_request_parser
+        chain = _prompt | _llm | _feedback_request_parser
 
         response = chain.invoke(
             {
