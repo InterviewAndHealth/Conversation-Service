@@ -9,12 +9,14 @@ from app.services.aws import AwsService
 from app.services.broker import RPCService
 from app.services.chat import ChatService
 from app.services.chat_history import ChatHistoryService
+from app.services.feedback import FeedbackService
 from app.services.redis import RedisService
 from app.types.communications import RPCPayloadType
 from app.types.conversation_response import (
     ConversationResponse,
     InterviewDetailsResponse,
 )
+from app.types.interview_report_response import InterviewReportResponse
 from app.types.message_request import MessageRequest
 from app.types.message_response import MessageResponse
 from app.utils.errors import (
@@ -91,7 +93,7 @@ async def continue_conversation(
 
 
 @router.get("/details/{interview_id}", responses={**NotFoundResponse})
-async def get_conversation(
+async def get_interview_details(
     interview_id: str, user_id: Annotated[str, Depends(authorize)]
 ) -> InterviewDetailsResponse:
 
@@ -106,3 +108,13 @@ async def get_conversation(
     return InterviewDetailsResponse(
         interview_id=interview_id, conversations=conversation
     )
+
+
+@router.get(
+    "/report/{interview_id}", responses={**NotFoundResponse, **BadRequestResponse}
+)
+async def get_interview_report(
+    interview_id: str, user_id: Annotated[str, Depends(authorize)]
+) -> InterviewReportResponse:
+    feedback_service = FeedbackService(interview_id)
+    return feedback_service.get_feedback()

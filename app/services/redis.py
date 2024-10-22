@@ -27,6 +27,9 @@ class RedisService:
         RESUME = "resume"
         """Namespace for resume-related keys."""
 
+        FEEDBACK = "feedback"
+        """Namespace for feedback-related keys."""
+
     class Status:
         """Status values for Redis keys."""
 
@@ -121,4 +124,15 @@ class RedisService:
     def get_resume(key) -> ResponseT:
         """Get a resume-related value from Redis."""
         raw = RedisService.getKeyWithNamespace(RedisService.Namespace.RESUME, key)
+        return raw.decode("utf-8") if raw else None
+
+    @staticmethod
+    def set_feedback(key, value) -> None:
+        """Set a feedback-related value in Redis."""
+        RedisService.setKeyWithNamespace(RedisService.Namespace.FEEDBACK, key, value)
+
+    @staticmethod
+    def get_feedback(key) -> ResponseT:
+        """Get a feedback-related value from Redis."""
+        raw = RedisService.getKeyWithNamespace(RedisService.Namespace.FEEDBACK, key)
         return raw.decode("utf-8") if raw else None

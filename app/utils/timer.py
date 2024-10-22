@@ -34,7 +34,7 @@ def _is_reaching_end_90percent(elapsed_time: float) -> bool:
     return elapsed_time >= session_duration * 0.9
 
 
-def _is_interview_ended(elapsed_time: float) -> bool:
+def is_interview_ended(elapsed_time: float) -> bool:
     """Check if the interview is ended."""
     session_duration = INTERVIEW_DURATION * 60
     return elapsed_time >= session_duration
@@ -48,7 +48,7 @@ def timer(func):
         interview_id = kwargs.get("interview_id")
         elapsed_time = _calculate_elapsed_time(interview_id)
 
-        if _is_interview_ended(elapsed_time):
+        if is_interview_ended(elapsed_time):
             raise BadRequestException400(
                 "Interview has ended. Thank you for your time and responses."
             )
