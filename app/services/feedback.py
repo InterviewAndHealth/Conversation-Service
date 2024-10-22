@@ -90,9 +90,10 @@ class FeedbackService:
         messages = messages[1:]
         feedbacks = []
 
-        for i in range(0, len(messages), 2):
-            question = messages[i].content
-            answer = messages[i + 1].content
+        for i in range(len(messages) // 2):
+            index = i * 2
+            question = messages[index].content
+            answer = messages[index + 1].content
 
             if not question or not answer:
                 continue
@@ -113,9 +114,8 @@ class FeedbackService:
         feedback = RedisService.get_feedback(self.interview_id)
 
         if feedback is not None:
-            feedback = InterviewReportResponse.from_serialized(feedback)
-            return feedback
+            return InterviewReportResponse.from_dict(feedback)
 
         feedback = self._get_feedback()
-        RedisService.set_feedback(self.interview_id, feedback.serialize())
+        RedisService.set_feedback(self.interview_id, feedback.dict())
         return feedback

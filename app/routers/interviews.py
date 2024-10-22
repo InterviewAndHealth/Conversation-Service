@@ -3,7 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
-from app import INTERVIEWS_SCHEDULE_RPC, USERS_RPC
+from app import ENV, INTERVIEWS_SCHEDULE_RPC, USERS_RPC
 from app.dependencies import authorize
 from app.services.aws import AwsService
 from app.services.broker import RPCService
@@ -42,29 +42,42 @@ async def start_conversation(
     interview_id: str, user_id: Annotated[str, Depends(authorize)]
 ) -> MessageResponse:
 
-    interview_details, resume_link = await asyncio.gather(
-        RPCService.request(
-            INTERVIEWS_SCHEDULE_RPC,
-            RPCService.build_request_payload(
-                RPCPayloadType.GET_INTERVIEW_DETAILS,
-                {"interviewId": interview_id},
+    if ENV == "development":
+        interview_details = {
+            "data": {
+                "userid": "user_id",
+                "jobdescription": "We are looking for a frontend developer. The candidate should have experience with React.",
+            }
+        }
+        resume_link = {"data": "Gopal Saraf\nFrontend Developer"}
+    else:
+        interview_details, resume_link = await asyncio.gather(
+            RPCService.request(
+                INTERVIEWS_SCHEDULE_RPC,
+                RPCService.build_request_payload(
+                    RPCPayloadType.GET_INTERVIEW_DETAILS,
+                    {"interviewId": interview_id},
+                ),
             ),
-        ),
-        RPCService.request(
-            USERS_RPC,
-            RPCService.build_request_payload(
-                RPCPayloadType.GET_USER_RESUME,
-                {"userId": user_id},
+            RPCService.request(
+                USERS_RPC,
+                RPCService.build_request_payload(
+                    RPCPayloadType.GET_USER_RESUME,
+                    {"userId": user_id},
+                ),
             ),
-        ),
-    )
+        )
 
     user_id_from_interview = interview_details.get("data").get("userid")
     if user_id != user_id_from_interview:
         raise BadRequestException400("User is not authorized for this interview.")
 
     job_description = interview_details.get("data").get("jobdescription")
-    resume = await fetch_pdf_text(resume_link.get("data"))
+    resume = (
+        resume_link.get("data")
+        if ENV == "development"
+        else await fetch_pdf_text(resume_link.get("data"))
+    )
 
     RedisService.set_job_description(interview_id, job_description)
     RedisService.set_resume(interview_id, resume)

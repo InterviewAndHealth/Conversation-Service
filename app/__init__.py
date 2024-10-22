@@ -8,6 +8,7 @@ load_dotenv(override=True)
 # Server
 HOST = os.getenv("HOST")
 PORT = int(os.getenv("PORT"))
+ENV = os.getenv("ENV", "development")
 
 # Database
 DATABASE_URL = os.getenv("DATABASE_URL")

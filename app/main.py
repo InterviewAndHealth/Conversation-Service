@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app import ENV
 from app.app_v1 import app as app_v1
 from app.services.broker import Broker
 from app.services.redis import RedisService
@@ -15,6 +16,7 @@ async def lifespan(_: FastAPI):
     RedisService.connect()
     await Broker.connect()
     await Broker.channel()
+    logging.info(f"Serving in {ENV} environment")
 
     yield
 

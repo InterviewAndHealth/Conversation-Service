@@ -1,6 +1,7 @@
 from typing import Union
 
 from redis import Redis
+from redis.commands.json.path import Path
 from redis.typing import ResponseT
 
 from app import REDIS_URL
@@ -127,12 +128,17 @@ class RedisService:
         return raw.decode("utf-8") if raw else None
 
     @staticmethod
-    def set_feedback(key, value) -> None:
+    def set_feedback(key, value: dict) -> None:
         """Set a feedback-related value in Redis."""
-        RedisService.setKeyWithNamespace(RedisService.Namespace.FEEDBACK, key, value)
+        RedisService.get_client().json().set(
+            f"{RedisService.Namespace.FEEDBACK}:{key}", Path.root_path(), value
+        )
 
     @staticmethod
-    def get_feedback(key) -> ResponseT:
+    def get_feedback(key) -> dict:
         """Get a feedback-related value from Redis."""
-        raw = RedisService.getKeyWithNamespace(RedisService.Namespace.FEEDBACK, key)
-        return raw.decode("utf-8") if raw else None
+        return (
+            RedisService.get_client()
+            .json()
+            .get(f"{RedisService.Namespace.FEEDBACK}:{key}")
+        )

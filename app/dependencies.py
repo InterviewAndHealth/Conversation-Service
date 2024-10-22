@@ -3,7 +3,7 @@ from typing import Annotated
 import jwt
 from fastapi import Header
 
-from app import JWT_SECRET_KEY
+from app import ENV, JWT_SECRET_KEY
 from app.utils.errors import UnauthorizedException401
 
 
@@ -11,6 +11,9 @@ from app.utils.errors import UnauthorizedException401
 async def authorize(authorization: Annotated[str, Header()] = None) -> str:
     """Authorize requests."""
     credentials_exception = UnauthorizedException401("Could not validate credentials.")
+
+    if ENV == "development":
+        return "user_id"
 
     try:
         token = authorization.split(" ")[1]
