@@ -11,6 +11,36 @@ class EventService:
     """Publish and subscribe to events"""
 
     @staticmethod
+    def build_request_payload(
+        type: str,
+        data: dict,
+    ) -> dict:
+        """
+        Build a request payload
+
+        Parameters
+        ----------
+        type : str
+            The request type
+        data : dict
+            The request data
+
+        Returns
+        -------
+        dict
+            The request payload
+
+        Examples
+        --------
+        >>> RPCService.build_request_payload("type", {"key": "value"})
+        """
+
+        return {
+            "type": type,
+            "data": data,
+        }
+
+    @staticmethod
     async def publish(service: str, data: dict):
         """
         Publish an event to a service
@@ -36,7 +66,6 @@ class EventService:
             await exchange.publish(
                 aio_pika.Message(body=message.encode()), routing_key=service
             )
-            logging.info(f"Published event to {service}: {data}")
         except Exception as err:
             logging.error(f"Failed to publish event: {err}")
 

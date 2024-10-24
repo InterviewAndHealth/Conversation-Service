@@ -1,12 +1,14 @@
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app import ENV
+from app import ENV, SERVICE_QUEUE
 from app.app_v1 import app as app_v1
-from app.services.broker import Broker
+from app.services.broker import Broker, EventService, RPCService
+from app.services.events import EventsService
 from app.services.redis import RedisService
 
 
@@ -18,8 +20,15 @@ async def lifespan(_: FastAPI):
     await Broker.channel()
     logging.info(f"Serving in {ENV} environment")
 
+    tasks = [
+        EventService.subscribe(SERVICE_QUEUE, EventsService),
+        RPCService.respond(EventsService),
+    ]
+    tasks = [asyncio.create_task(task) for task in tasks]
+
     yield
 
+    [task.cancel() for task in tasks]
     RedisService.disconnect()
     await Broker.disconnect()
 

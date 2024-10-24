@@ -2,9 +2,9 @@ from enum import StrEnum
 
 
 class EventType(StrEnum):
-
-    def __str__(self):
-        return str(self.value)
+    SCHEDULE_EVENT = "SCHEDULE_EVENT"
+    CHANGE_KEY = "CHANGE_KEY"
+    GENERATE_REPORT = "GENERATE_REPORT"
 
 
 class RPCPayloadType(StrEnum):

@@ -72,7 +72,7 @@ class FeedbackService:
         start_time = float(start_time)
         elapsed_time = time.time() - start_time
 
-        if not is_interview_ended(elapsed_time):
+        if not is_interview_ended(elapsed_time, interview_id):
             raise BadRequestException400("Interview has not ended yet.")
 
         self.interview_id = interview_id
@@ -161,6 +161,16 @@ class FeedbackService:
             final_feedback=overall_feedback,
             final_score=final_score,
         )
+
+    def generate_feedback(self) -> None:
+        """Generate feedback for the question and answer."""
+        feedback = RedisService.get_feedback(self.interview_id)
+
+        if feedback:
+            return
+
+        feedback = self._get_feedback()
+        RedisService.set_feedback(self.interview_id, feedback.dict())
 
     def get_feedback(self) -> InterviewReportResponse:
         """Get the feedback for the interview."""

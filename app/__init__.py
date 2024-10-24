@@ -21,6 +21,7 @@ JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 
 # Duration of the interview in minutes
 INTERVIEW_DURATION = int(os.getenv("INTERVIEW_DURATION"))
+FEEDBACK_DELAY = int(os.getenv("FEEDBACK_DELAY"), 10)
 
 # Model
 MODEL = os.getenv("MODEL")
@@ -56,6 +57,7 @@ USERS_QUEUE = os.getenv("USERS_QUEUE")
 USERS_RPC = os.getenv("USERS_RPC")
 INTERVIEWS_SCHEDULE_QUEUE = os.getenv("INTERVIEWS_SCHEDULE_QUEUE")
 INTERVIEWS_SCHEDULE_RPC = os.getenv("INTERVIEWS_SCHEDULE_RPC")
+SCHEDULER_QUEUE = os.getenv("SCHEDULER_QUEUE")
 
 
 _imported_variable = {

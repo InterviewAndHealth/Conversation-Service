@@ -55,15 +55,15 @@ async def start_conversation(
             RPCService.request(
                 INTERVIEWS_SCHEDULE_RPC,
                 RPCService.build_request_payload(
-                    RPCPayloadType.GET_INTERVIEW_DETAILS,
-                    {"interviewId": interview_id},
+                    type=RPCPayloadType.GET_INTERVIEW_DETAILS,
+                    data={"interviewId": interview_id},
                 ),
             ),
             RPCService.request(
                 USERS_RPC,
                 RPCService.build_request_payload(
-                    RPCPayloadType.GET_USER_RESUME,
-                    {"userId": user_id},
+                    type=RPCPayloadType.GET_USER_RESUME,
+                    data={"userId": user_id},
                 ),
             ),
         )
@@ -79,16 +79,17 @@ async def start_conversation(
         else await fetch_pdf_text(resume_link.get("data"))
     )
 
+    RedisService.set_user(interview_id, user_id)
     RedisService.set_job_description(interview_id, job_description)
     RedisService.set_resume(interview_id, resume)
 
-    chat_service = ChatService(interview_id)
+    chat_service = ChatService(interview_id, user_id)
 
     if chat_service.is_active():
         raise BadRequestException400("Interview already started.")
 
     chat_service.set_active()
-    return chat_service.start()
+    return await chat_service.start()
 
 
 @router.post(
@@ -101,8 +102,19 @@ async def continue_conversation(
     message: MessageRequest,
     user_id: Annotated[str, Depends(authorize)],
 ) -> MessageResponse:
-    chat_service = ChatService(interview_id)
+    chat_service = ChatService(interview_id, user_id)
     return chat_service.invoke(message.message)
+
+
+@router.post(
+    "/end/{interview_id}", responses={**BadRequestResponse, **NotFoundResponse}
+)
+@timer
+async def end_conversation(
+    interview_id: str, user_id: Annotated[str, Depends(authorize)]
+) -> None:
+    chat_service = ChatService(interview_id, user_id)
+    return await chat_service.end()
 
 
 @router.get("/details/{interview_id}", responses={**NotFoundResponse})
