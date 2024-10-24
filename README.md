@@ -1,6 +1,6 @@
-# Interview Server
+# Conversation Service
 
-This is a interview server for Mock Interview and Mental Health Platform.
+This service is responsible for handling the conversation between the candidate and the AI interviewer. It also handles STT (Speech to Text) and TTS (Text to Speech) services.
 
 ## Installation
 
