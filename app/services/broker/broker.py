@@ -8,6 +8,7 @@ from app import EXCHANGE_NAME, RABBITMQ_URL
 class Broker:
     """RabbitMQ broker"""
 
+    _connection = None
     _channel = None
     _exchange = None
 
@@ -19,6 +20,7 @@ class Broker:
             return cls._channel
         try:
             connection = await aio_pika.connect_robust(RABBITMQ_URL)
+            cls._connection = connection
             channel = await connection.channel()
             cls._channel = channel
             logging.info("Connected to RabbitMQ")
@@ -31,7 +33,9 @@ class Broker:
         """Close the connection to RabbitMQ"""
 
         if cls._channel:
+            await cls._exchange.delete()
             await cls._channel.close()
+            await cls._connection.close()
             cls._channel = None
             logging.info("Closed RabbitMQ connection")
 
