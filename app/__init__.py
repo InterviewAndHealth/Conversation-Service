@@ -10,9 +10,6 @@ HOST = os.getenv("HOST")
 PORT = int(os.getenv("PORT"))
 ENV = os.getenv("ENV", "development")
 
-# Database
-DATABASE_URL = os.getenv("DATABASE_URL")
-
 # Redis URL
 REDIS_URL = os.getenv("REDIS_URL")
 
@@ -20,8 +17,8 @@ REDIS_URL = os.getenv("REDIS_URL")
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 
 # Duration of the interview in minutes
-INTERVIEW_DURATION = int(os.getenv("INTERVIEW_DURATION"))
-FEEDBACK_DELAY = int(os.getenv("FEEDBACK_DELAY"), 10)
+INTERVIEW_DURATION = os.getenv("INTERVIEW_DURATION")
+FEEDBACK_DELAY = int(os.getenv("FEEDBACK_DELAY", 5))
 
 # Model
 MODEL = os.getenv("MODEL")
@@ -63,7 +60,6 @@ SCHEDULER_QUEUE = os.getenv("SCHEDULER_QUEUE")
 _imported_variable = {
     "HOST": HOST,
     "PORT": PORT,
-    "DATABASE_URL": DATABASE_URL,
     "REDIS_URL": REDIS_URL,
     "JWT_SECRET_KEY": JWT_SECRET_KEY,
     "INTERVIEW_DURATION": INTERVIEW_DURATION,
@@ -93,3 +89,5 @@ if SPEECH_PROVIDER and SPEECH_PROVIDER.lower() == "aws":
 if not all(_imported_variable.values()):
     missing_variables = [key for key, value in _imported_variable.items() if not value]
     raise ValueError(f"Missing environment variables: {missing_variables}")
+
+INTERVIEW_DURATION = int(INTERVIEW_DURATION)
