@@ -127,7 +127,9 @@ class RPCService:
 
         try:
             channel = await Broker.connect()
-            queue = await channel.declare_queue(RPC_QUEUE)
+            queue = await channel.declare_queue(
+                RPC_QUEUE, durable=True, arguments={"x-queue-type": "quorum"}
+            )
 
             async with queue.iterator() as queue_iter:
                 async for message in queue_iter:

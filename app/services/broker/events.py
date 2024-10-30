@@ -97,7 +97,9 @@ class EventService:
 
         try:
             channel = await Broker.connect()
-            queue = await channel.declare_queue(SERVICE_QUEUE, durable=True)
+            queue = await channel.declare_queue(
+                SERVICE_QUEUE, durable=True, arguments={"x-queue-type": "quorum"}
+            )
             await queue.bind(exchange=EXCHANGE_NAME, routing_key=service)
 
             async with queue.iterator() as queue_iter:
