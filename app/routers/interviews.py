@@ -3,7 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
-from app import ENV, INTERVIEWS_SCHEDULE_RPC, USERS_RPC
+from app import ENV, INTERVIEWS_RPC, USERS_RPC
 from app.dependencies import authorize
 from app.services.aws import AwsService
 from app.services.broker import RPCService
@@ -53,7 +53,7 @@ async def start_conversation(
     else:
         interview_details, resume_link = await asyncio.gather(
             RPCService.request(
-                INTERVIEWS_SCHEDULE_RPC,
+                INTERVIEWS_RPC,
                 RPCService.build_request_payload(
                     type=RPCPayloadType.GET_INTERVIEW_DETAILS,
                     data={"interviewId": interview_id},
