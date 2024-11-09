@@ -9,7 +9,7 @@ from app.utils.errors import UnauthorizedException401
 
 # Autorization header
 async def authorize(
-    authorizationn: Annotated[str, Header()] = None,
+    authorization: Annotated[str, Header()] = None,
     swagger_authorization: Annotated[str, Header()] = None,
 ) -> str:
     """Authorize requests."""
@@ -19,7 +19,7 @@ async def authorize(
         return "user_id"
 
     try:
-        auth = authorizationn or swagger_authorization
+        auth = authorization or swagger_authorization
         token = auth.split(" ")[1]
         payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=["HS256"])
         user_id = payload.get("sub")
