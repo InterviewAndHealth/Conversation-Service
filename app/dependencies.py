@@ -8,7 +8,10 @@ from app.utils.errors import UnauthorizedException401
 
 
 # Autorization header
-async def authorize(authorization: Annotated[str, Header()] = None) -> str:
+async def authorize(
+    authorizationn: Annotated[str, Header()] = None,
+    swagger_authorization: Annotated[str, Header()] = None,
+) -> str:
     """Authorize requests."""
     credentials_exception = UnauthorizedException401("Could not validate credentials.")
 
@@ -16,7 +19,8 @@ async def authorize(authorization: Annotated[str, Header()] = None) -> str:
         return "user_id"
 
     try:
-        token = authorization.split(" ")[1]
+        auth = authorizationn or swagger_authorization
+        token = auth.split(" ")[1]
         payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=["HS256"])
         user_id = payload.get("sub")
         if not user_id:

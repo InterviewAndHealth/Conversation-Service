@@ -1,7 +1,16 @@
+import asyncio
+
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_core.runnables.utils import ConfigurableFieldSpec
 
-from app import FEEDBACK_DELAY, INTERVIEW_DURATION, SCHEDULER_QUEUE, SERVICE_QUEUE
+from app import (
+    FEEDBACK_DELAY,
+    INTERVIEW_DURATION,
+    INTERVIEWS_QUEUE,
+    SCHEDULER_QUEUE,
+    SERVICE_QUEUE,
+    USERS_QUEUE,
+)
 from app.services.broker.events import EventService
 from app.services.chain import ChainService
 from app.services.chat_history import ChatHistoryService
@@ -84,17 +93,39 @@ class ChatService:
         RedisService.set_job_description(self.interview_id, self.job_description)
         RedisService.set_resume(self.interview_id, self.resume)
 
-        await EventService.publish(
-            SCHEDULER_QUEUE,
-            EventService.build_request_payload(
-                type=EventType.SCHEDULE_EVENT,
-                data={
-                    "id": self.interview_id,
-                    "seconds": (INTERVIEW_DURATION + FEEDBACK_DELAY) * 60,
-                    "service": SERVICE_QUEUE,
-                    "type": EventType.GENERATE_REPORT,
-                    "data": {"interview_id": self.interview_id},
-                },
+        await asyncio.gather(
+            EventService.publish(
+                SCHEDULER_QUEUE,
+                EventService.build_request_payload(
+                    type=EventType.SCHEDULE_EVENT,
+                    data={
+                        "id": f"feedback_{self.interview_id}",
+                        "seconds": (INTERVIEW_DURATION + FEEDBACK_DELAY) * 60,
+                        "service": SERVICE_QUEUE,
+                        "type": EventType.GENERATE_REPORT,
+                        "data": {"interview_id": self.interview_id},
+                    },
+                ),
+            ),
+            EventService.publish(
+                INTERVIEWS_QUEUE,
+                EventService.build_request_payload(
+                    type=EventType.INTERVIEW_STARTED,
+                    data={"interviewId": self.interview_id},
+                ),
+            ),
+            EventService.publish(
+                SCHEDULER_QUEUE,
+                EventService.build_request_payload(
+                    type=EventType.SCHEDULE_EVENT,
+                    data={
+                        "id": f"interview_completed_{self.interview_id}",
+                        "seconds": INTERVIEW_DURATION * 60,
+                        "service": INTERVIEWS_QUEUE,
+                        "type": EventType.INTERVIEW_COMPLETED,
+                        "data": {"interviewId": self.interview_id},
+                    },
+                ),
             ),
         )
 
@@ -104,16 +135,31 @@ class ChatService:
         """End the chat service."""
         self.set_inactive()
 
-        await EventService.publish(
-            SCHEDULER_QUEUE,
-            EventService.build_request_payload(
-                type=EventType.SCHEDULE_EVENT,
-                data={
-                    "id": self.interview_id,
-                    "seconds": FEEDBACK_DELAY * 60,
-                    "service": SERVICE_QUEUE,
-                    "type": EventType.GENERATE_REPORT,
-                    "data": {"interview_id": self.interview_id},
-                },
+        await asyncio.gather(
+            EventService.publish(
+                SCHEDULER_QUEUE,
+                EventService.build_request_payload(
+                    type=EventType.SCHEDULE_EVENT,
+                    data={
+                        "id": f"feedback_{self.interview_id}",
+                        "seconds": FEEDBACK_DELAY * 60,
+                        "service": SERVICE_QUEUE,
+                        "type": EventType.GENERATE_REPORT,
+                        "data": {"interview_id": self.interview_id},
+                    },
+                ),
+            ),
+            EventService.publish(
+                SCHEDULER_QUEUE,
+                EventService.build_request_payload(
+                    type=EventType.SCHEDULE_EVENT,
+                    data={
+                        "id": f"interview_completed_{self.interview_id}",
+                        "seconds": 1,
+                        "service": INTERVIEWS_QUEUE,
+                        "type": EventType.INTERVIEW_COMPLETED,
+                        "data": {"interviewId": self.interview_id},
+                    },
+                ),
             ),
         )
