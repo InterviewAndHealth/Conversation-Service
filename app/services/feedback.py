@@ -138,6 +138,16 @@ class FeedbackService:
             raise NotFoundException404("Interview not found.")
 
         messages = messages[1:]
+
+        # If number of messages < 2, then there are no questions and answers
+        if len(messages) < 2:
+            return InterviewReportResponse(
+                interview_id=self.interview_id,
+                feedbacks=[],
+                final_feedback="",
+                final_score=0.0,
+            )
+
         feedbacks = []
 
         for i in range(len(messages) // 2):
