@@ -9,7 +9,6 @@ from app import (
     INTERVIEWS_QUEUE,
     SCHEDULER_QUEUE,
     SERVICE_QUEUE,
-    USERS_QUEUE,
 )
 from app.services.broker.events import EventService
 from app.services.chain import ChainService

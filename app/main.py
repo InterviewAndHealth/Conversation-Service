@@ -12,9 +12,14 @@ from app.services.events import EventsService
 from app.services.redis import RedisService
 
 
+logging.basicConfig(level=logging.INFO, format="%(levelname)s:\t  %(message)s")
+logging.getLogger("uvicorn.access").addFilter(
+    lambda record: "GET / " not in record.getMessage()
+)
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s:\t  %(message)s")
     RedisService.connect()
     await Broker.connect()
     await Broker.channel()

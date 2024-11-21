@@ -4,10 +4,14 @@ from app.services.chat_history import ChatHistoryService
 from app.services.feedback import FeedbackService
 from app.types.communications import EventType
 
+import logging
+
 
 class EventsService:
     @staticmethod
     async def handle_event(event):
+        logging.info(f"Received event: {event}")
+
         if not event.get("type"):
             return
 
@@ -41,5 +45,6 @@ class EventsService:
 
     @staticmethod
     async def respond_rpc(message):
-        print(f"Received RPC: {message}")
+        logging.info(f"Received RPC: {message}")
+
         return {"data": "Responding to RPC"}
