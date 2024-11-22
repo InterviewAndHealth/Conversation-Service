@@ -34,5 +34,6 @@ jobs:
           context: .
           push: true
           tags: |
+            ${{ env.DOCKER_REGISTRY }}/${{ env.GITHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
             ${{ env.DOCKER_REGISTRY }}/${{ env.GITHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
             ${{ env.DOCKER_REGISTRY }}/${{ env.GITHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
