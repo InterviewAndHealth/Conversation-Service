@@ -1,4 +1,4 @@
-name: Build and Push Docker Image
+name: Build, Push and Deploy to Dev
 on:
   workflow_dispatch:
 
@@ -6,17 +6,26 @@ permissions:
   contents: read
   packages: write
 
+env:
+  DOCKER_REGISTRY: ghcr.io
+  DOCKER_USERNAME: ${{ github.actor }}
+  DOCKER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+  GITHUB_USERNAME: interviewandhealth
+  IMAGE_NAME: conversation-service
+  IMAGE_TAG: v${{ github.run_number }}
+  CLUSTER_USERNAME: InterviewAndHealth
+  CLUSTER_REPOSITORY: Cluster
+  BRANCH: main
+  USERNAME: GopalSaraf
+  ACCESS_TOKEN: ${{ secrets.PERSONEL_TOKEN }}
+  FILE_PATH: services/conversation-service/overlays/development/kustomization.yaml
+  KEY: newTag
+  ENVIRONMENT: development
+
 jobs:
   build:
     name: Build Image and Push to GitHub Container Registry
     runs-on: ubuntu-latest
-    env:
-      DOCKER_REGISTRY: ghcr.io
-      DOCKER_USERNAME: ${{ github.actor }}
-      DOCKER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
-      GITHUB_USERNAME: interviewandhealth
-      IMAGE_NAME: conversation-service
-      IMAGE_TAG: v${{ github.run_number }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -37,3 +46,29 @@ jobs:
             ${{ env.DOCKER_REGISTRY }}/${{ env.GITHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
             ${{ env.DOCKER_REGISTRY }}/${{ env.GITHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
             ${{ env.DOCKER_REGISTRY }}/${{ env.GITHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+  deploy:
+    name: Deploy to Development
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout Repository
+        shell: bash
+        run: |
+          REPOSITORY=https://${{ env.USERNAME }}:${{ env.ACCESS_TOKEN }}@github.com/${{ env.CLUSTER_USERNAME }}/${{ env.CLUSTER_REPOSITORY }}.git
+          git clone $REPOSITORY --depth 1 --branch ${{ env.BRANCH }} --single-branch .
+
+      - name: Update Kustomization File
+        shell: bash
+        run: |
+          sed -i "s/${{ env.KEY }}: .*/${{ env.KEY }}: ${{ env.IMAGE_TAG }}/g" ${{ env.FILE_PATH }}
+
+      - name: Commit Changes
+        shell: bash
+        run: |
+          git config user.name "${{ env.USERNAME }}"
+          git config user.email "${{ env.USERNAME }}@users.noreply.github.com"
+          git add $FILE_PATH
+          git commit -m "Update ${{ env.IMAGE_NAME }} image tag to ${{ env.IMAGE_TAG }} in ${{ env.ENVIRONMENT }}"
+          git pull --rebase
+          git push

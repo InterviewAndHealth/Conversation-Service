@@ -1,0 +1,56 @@
+name: Deploy to Production
+on:
+  workflow_dispatch:
+
+env:
+  GITHUB_USERNAME: interviewandhealth
+  IMAGE_NAME: conversation-service
+  CLUSTER_USERNAME: InterviewAndHealth
+  CLUSTER_REPOSITORY: Cluster
+  BRANCH: main
+  USERNAME: GopalSaraf
+  ACCESS_TOKEN: ${{ secrets.PERSONEL_TOKEN }}
+  FILE_PATH: services/conversation-service/overlays/production/kustomization.yaml
+  KEY: newTag
+  ENVIRONMENT: production
+
+jobs:
+  update:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate GHCR Token
+        id: ghcr_token
+        shell: bash
+        run: |
+          GHCR_TOKEN=$(echo ${{ secrets.PERSONEL_TOKEN }} | base64)
+          echo "GHCR_TOKEN=$GHCR_TOKEN" >> $GITHUB_OUTPUT
+
+      - name: Checkout Latest Image Tag
+        id: checkout
+        shell: bash
+        run: |
+            IMAGE_TAG=$(curl -H "Authorization: Bearer ${{ steps.ghcr_token.outputs.GHCR_TOKEN }}" https://ghcr.io/v2/${{ env.GITHUB_USERNAME }}/${{ env.IMAGE_NAME }}/tags/list | jq -r '.tags | map(select(test("^v[0-9]+$")))[-1]')
+            # echo "::set-output name=IMAGE_TAG::$IMAGE_TAG"
+            echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Checkout Repository
+        shell: bash
+        run: |
+          REPOSITORY=https://${{ env.USERNAME }}:${{ env.ACCESS_TOKEN }}@github.com/${{ env.CLUSTER_USERNAME }}/${{ env.CLUSTER_REPOSITORY }}.git
+          git clone $REPOSITORY --depth 1 --branch ${{ env.BRANCH }} --single-branch .
+
+      - name: Update Kustomization File
+        shell: bash
+        run: |
+          sed -i "s/${{ env.KEY }}: .*/${{ env.KEY }}: ${{ steps.checkout.outputs.IMAGE_TAG }}/g" ${{ env.FILE_PATH }}
+
+      - name: Commit Changes
+        shell: bash
+        run: |
+          git config user.name "${{ env.USERNAME }}"
+          git config user.email "${{ env.USERNAME }}@users.noreply.github.com"
+          git add $FILE_PATH
+          git commit -m "Update ${{ env.IMAGE_NAME }} image tag to ${{ steps.checkout.outputs.IMAGE_TAG }} in ${{ env.ENVIRONMENT }}"
+          git pull --rebase
+          git push
