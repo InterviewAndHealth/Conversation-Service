@@ -22,4 +22,4 @@ app.add_exception_handler(Exception, general_exception_handler)
 
 @app.get("/")
 async def root():
-    return {"message": "Interviews API v1"}
+    return {"message": "Welcome to the Conversations Service v1"}

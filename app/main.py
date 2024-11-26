@@ -59,4 +59,4 @@ app.mount("/v1", app_v1)
 
 @app.get("/")
 async def root():
-    return {"message": "Interviews API"}
+    return {"message": "Welcome to the Conversations Service"}
