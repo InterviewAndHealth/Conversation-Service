@@ -29,25 +29,37 @@ INTERVIEW_DURATION = os.getenv("INTERVIEW_DURATION")
 FEEDBACK_DELAY = int(os.getenv("FEEDBACK_DELAY", 5))
 
 # Model
-MODEL = os.getenv("CONVERSATION_SERVICE_MODEL")
+MODEL = os.getenv("MODEL") or os.getenv("CONVERSATION_SERVICE_MODEL")
 
 # Groq settings
-USE_GROQ = os.getenv("CONVERSATION_SERVICE_USE_GROQ", "false").lower() == "true"
-GROQ_MODEL = os.getenv("CONVERSATION_SERVICE_GROQ_MODEL")
-GROQ_API_KEY = os.getenv("CONVERSATION_SERVICE_GROQ_API_KEY")
+USE_GROQ = (
+    os.getenv("USE_GROQ") or os.getenv("CONVERSATION_SERVICE_USE_GROQ") or "false"
+).lower() == "true"
+GROQ_MODEL = os.getenv("GROQ_MODEL") or os.getenv("CONVERSATION_SERVICE_GROQ_MODEL")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY") or os.getenv(
+    "CONVERSATION_SERVICE_GROQ_API_KEY"
+)
 
 # Speech service provider
-SPEECH_PROVIDER = os.getenv("SPEECH_PROVIDER")
+SPEECH_PROVIDERS = os.getenv("SPEECH_PROVIDERS")
 
 # AWS
-AWS_REGION = os.getenv("CONVERSATION_SERVICE_AWS_REGION")
-AWS_ACCESS_KEY_ID = os.getenv("CONVERSATION_SERVICE_AWS_ACCESS_KEY_ID")
-AWS_SECRET_ACCESS_KEY = os.getenv("CONVERSATION_SERVICE_AWS_SECRET_ACCESS_KEY")
-AWS_ROLE_ARN = os.getenv("CONVERSATION_SERVICE_AWS_ROLE_ARN")
+AWS_REGION = os.getenv("AWS_REGION") or os.getenv("CONVERSATION_SERVICE_AWS_REGION")
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID") or os.getenv(
+    "CONVERSATION_SERVICE_AWS_ACCESS_KEY_ID"
+)
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY") or os.getenv(
+    "CONVERSATION_SERVICE_AWS_SECRET_ACCESS_KEY"
+)
+AWS_ROLE_ARN = os.getenv("AWS_ROLE_ARN") or os.getenv(
+    "CONVERSATION_SERVICE_AWS_ROLE_ARN"
+)
 
 # Azure
-AZURE_KEY = os.getenv("CONVERSATION_SERVICE_AZURE_KEY")
-AZURE_REGION = os.getenv("CONVERSATION_SERVICE_AZURE_REGION")
+AZURE_KEY = os.getenv("AZURE_KEY") or os.getenv("CONVERSATION_SERVICE_AZURE_KEY")
+AZURE_REGION = os.getenv("AZURE_REGION") or os.getenv(
+    "CONVERSATION_SERVICE_AZURE_REGION"
+)
 
 # RabbitMQ URL
 RABBITMQ_USERNAME = os.getenv("RABBITMQ_USERNAME")
@@ -78,7 +90,7 @@ _imported_variable = {
     "REDIS_URL": REDIS_URL,
     "JWT_SECRET_KEY": JWT_SECRET_KEY,
     "INTERVIEW_DURATION": INTERVIEW_DURATION,
-    "SPEECH_PROVIDER": SPEECH_PROVIDER,
+    "SPEECH_PROVIDER": SPEECH_PROVIDERS,
     "RABBITMQ_URL": RABBITMQ_URL,
     "EXCHANGE_NAME": EXCHANGE_NAME,
 }
@@ -88,10 +100,10 @@ if USE_GROQ:
 else:
     _imported_variable.update({"MODEL": MODEL})
 
-if SPEECH_PROVIDER and SPEECH_PROVIDER.lower() == "azure":
+if SPEECH_PROVIDERS and "azure" in SPEECH_PROVIDERS.lower():
     _imported_variable.update({"AZURE_KEY": AZURE_KEY, "AZURE_REGION": AZURE_REGION})
 
-if SPEECH_PROVIDER and SPEECH_PROVIDER.lower() == "aws":
+if SPEECH_PROVIDERS and "aws" in SPEECH_PROVIDERS.lower():
     _imported_variable.update(
         {
             "AWS_REGION": AWS_REGION,
@@ -106,3 +118,6 @@ if not all(_imported_variable.values()):
     raise ValueError(f"Missing environment variables: {missing_variables}")
 
 INTERVIEW_DURATION = int(INTERVIEW_DURATION)
+SPEECH_PROVIDERS = [
+    provider.strip().lower() for provider in SPEECH_PROVIDERS.split(",")
+]

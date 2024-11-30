@@ -1,4 +1,4 @@
-from app import AZURE_REGION, SPEECH_PROVIDER
+from app import AZURE_REGION, SPEECH_PROVIDERS
 from app.types.azure_response import AzureResponse
 from app.utils.azure import AzureTokenGenerator
 from app.utils.errors import BadRequestException400, InternalServerErrorException500
@@ -12,7 +12,7 @@ class AzureService:
 
     def _validate_azure_service(self):
         """Validate Azure service."""
-        if SPEECH_PROVIDER.lower() != "azure":
+        if "azure" not in SPEECH_PROVIDERS:
             raise BadRequestException400("Azure service is not active.")
 
     def generate_token(self) -> AzureResponse:

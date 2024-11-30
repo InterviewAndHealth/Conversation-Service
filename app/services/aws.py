@@ -1,4 +1,4 @@
-from app import AWS_REGION, SPEECH_PROVIDER
+from app import AWS_REGION, SPEECH_PROVIDERS
 from app.types.aws_response import AwsResponse
 from app.utils.aws import AwsCredentialsGenerator
 from app.utils.errors import BadRequestException400, InternalServerErrorException500
@@ -12,7 +12,7 @@ class AwsService:
 
     def _validate_aws_service(self):
         """Validate AWS service."""
-        if SPEECH_PROVIDER.lower() != "aws":
+        if "aws" not in SPEECH_PROVIDERS:
             raise BadRequestException400("AWS service is not active.")
 
     def generate_credentials(self, interview_id: str = "") -> AwsResponse:

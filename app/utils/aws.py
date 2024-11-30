@@ -5,13 +5,13 @@ from app import (
     AWS_REGION,
     AWS_ROLE_ARN,
     AWS_SECRET_ACCESS_KEY,
-    SPEECH_PROVIDER,
+    SPEECH_PROVIDERS,
 )
 
 
 class AwsCredentialsGenerator:
     def __init__(self):
-        if SPEECH_PROVIDER.lower() == "aws":
+        if "aws" in SPEECH_PROVIDERS:
             self.sts_client = boto3.client(
                 "sts",
                 aws_access_key_id=AWS_ACCESS_KEY_ID,
@@ -20,7 +20,7 @@ class AwsCredentialsGenerator:
             )
 
     def generate_credentials(self, interview_id: str = ""):
-        if SPEECH_PROVIDER.lower() != "aws":
+        if "aws" not in SPEECH_PROVIDERS:
             return None
         try:
             assumed_role = self.sts_client.assume_role(
