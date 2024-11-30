@@ -42,7 +42,7 @@ async def start_conversation(
     interview_id: str, user_id: Annotated[str, Depends(authorize)]
 ) -> MessageResponse:
 
-    if ENV == "development":
+    if user_id == "user_id":
         interview_details = {
             "data": {
                 "userid": "user_id",
@@ -68,14 +68,18 @@ async def start_conversation(
             ),
         )
 
+    if not interview_details or not resume_link:
+        raise NotFoundException404("Interview not found.")
+
     user_id_from_interview = interview_details.get("data").get("userid")
     if user_id != user_id_from_interview:
         raise BadRequestException400("User is not authorized for this interview.")
 
     job_description = interview_details.get("data").get("jobdescription")
+
     resume = (
         resume_link.get("data")
-        if ENV == "development"
+        if user_id == "user_id"
         else await fetch_pdf_text(resume_link.get("data"))
     )
 
@@ -121,7 +125,6 @@ async def end_conversation(
 async def get_interview_details(
     interview_id: str, user_id: Annotated[str, Depends(authorize)]
 ) -> InterviewDetailsResponse:
-
     messages = ChatHistoryService.get_messages(interview_id)
 
     if not messages or len(messages) == 0:
