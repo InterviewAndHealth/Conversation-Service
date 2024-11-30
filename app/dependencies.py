@@ -15,9 +15,6 @@ async def authorize(
     """Authorize requests."""
     credentials_exception = UnauthorizedException401("Could not validate credentials.")
 
-    if ENV == "development":
-        return "user_id"
-
     try:
         auth = authorization or swagger_authorization
         token = auth.split(" ")[1]
@@ -26,6 +23,9 @@ async def authorize(
         if not user_id:
             raise credentials_exception
     except Exception:
+        if ENV == "development":
+            return "user_id"
+
         raise credentials_exception
 
     return user_id
