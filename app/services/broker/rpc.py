@@ -72,7 +72,7 @@ class RPCService:
         """
         correlation_id = str(uuid.uuid4())
         channel = await Broker.connect()
-        queue = await channel.declare_queue("", exclusive=True)
+        queue = await channel.declare_queue("", exclusive=True, auto_delete=True)
 
         try:
             future = asyncio.get_event_loop().create_future()
@@ -83,7 +83,7 @@ class RPCService:
                         future.set_result(json.loads(message.body))
                         await message.ack()
 
-            await queue.consume(on_response)
+            consumer_tag = await queue.consume(on_response)
 
             await channel.default_exchange.publish(
                 aio_pika.Message(
@@ -95,13 +95,18 @@ class RPCService:
             )
 
             response = await asyncio.wait_for(future, timeout)
-            await queue.delete(if_unused=True, if_empty=True)
+
             return response
         except asyncio.TimeoutError:
             raise RequestTimeoutException408()
         except Exception as err:
-            await queue.delete(if_unused=True, if_empty=True)
             logging.error(f"Failed to request data: {err}")
+        finally:
+            try:
+                await queue.cancel(consumer_tag)
+                await queue.delete()
+            except Exception as delete_err:
+                logging.error(f"Failed to delete queue: {delete_err}")
 
     @staticmethod
     async def respond(responder):
