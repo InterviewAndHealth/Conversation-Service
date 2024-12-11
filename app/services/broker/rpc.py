@@ -70,12 +70,11 @@ class RPCService:
         --------
         >>> RPCService.request("service", {"key": "value"})
         """
+        correlation_id = str(uuid.uuid4())
+        channel = await Broker.connect()
+        queue = await channel.declare_queue("", exclusive=True)
 
         try:
-            correlation_id = str(uuid.uuid4())
-            channel = await Broker.connect()
-            queue = await channel.declare_queue("", exclusive=True)
-
             future = asyncio.get_event_loop().create_future()
 
             async def on_response(message: aio_pika.IncomingMessage):
@@ -95,10 +94,13 @@ class RPCService:
                 routing_key=service_rpc,
             )
 
-            return await asyncio.wait_for(future, timeout)
+            response = await asyncio.wait_for(future, timeout)
+            await queue.delete(if_unused=True, if_empty=True)
+            return response
         except asyncio.TimeoutError:
             raise RequestTimeoutException408()
         except Exception as err:
+            await queue.delete(if_unused=True, if_empty=True)
             logging.error(f"Failed to request data: {err}")
 
     @staticmethod
