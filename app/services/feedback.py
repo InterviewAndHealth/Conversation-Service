@@ -16,10 +16,10 @@ from app.types.interview_report_response import (
 )
 from app.utils.errors.exceptions import BadRequestException400, NotFoundException404
 from app.utils.timer import is_interview_ended
-
-_individual_feedback_message = """You are an experienced interviewer. You have taken the interview of the candidate based on the job description and resume. Now, you are assessing the candidate's response to a question. Provide feedback based on the job description and resume. Provide feedback like you are the real person who is talking to the candidate. Keep the feedback professional and detailed. Mention all positive and negative points in the feedback. Provide feedback in a way that the candidate can improve their response. Refer to candidate by You or Your in the feedback. Also provide a score to the candidate's response between 0 to 100 upto 4 decimal places."""
-
-_overall_feedback_message = """You are an experienced interviewer. You have taken the interview of the candidate based on the job description and resume. Following are the feedbacks provided by you. Now, you are assessing the candidate's overall performance. Provide overall feedback keeping in mind all feedbacks provided by you. Keep feedback professional and detailed. Refer to candidate by You or Your in the feedback."""
+from app.services.system_messages import (
+    candidate_response_feedback,
+    candidate_performance_review,
+)
 
 
 class FeedbackResponse(BaseModel):
@@ -37,7 +37,7 @@ _overall_feedback_request_parser = JsonOutputParser(
 )
 
 _individual_prompt = PromptTemplate(
-    template=_individual_feedback_message
+    template=candidate_response_feedback
     + "\n{format_instructions}\nJob Description: {job_description}\nResume: {resume}\nQuestion: {question}\nAnswer: {answer}",
     input_variables=["job_description", "resume", "question", "answer"],
     partial_variables={
@@ -46,13 +46,14 @@ _individual_prompt = PromptTemplate(
 )
 
 _overall_prompt = PromptTemplate(
-    template=_overall_feedback_message
+    template=candidate_performance_review
     + "\n{format_instructions}\nJob Description: {job_description}\nResume: {resume}\nFeedbacks: {feedbacks}",
     input_variables=["job_description", "resume", "feedbacks"],
     partial_variables={
         "format_instructions": _overall_feedback_request_parser.get_format_instructions()
     },
 )
+
 
 _llm = (
     ChatGroq(model=GROQ_MODEL, api_key=GROQ_API_KEY)
