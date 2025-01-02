@@ -96,18 +96,25 @@ class EventService:
         """
 
         try:
+            # Connect to RabbitMQ and declare queue
             channel = await Broker.connect()
             queue = await channel.declare_queue(
                 SERVICE_QUEUE, durable=True, arguments={"x-queue-type": "quorum"}
             )
             await queue.bind(exchange=EXCHANGE_NAME, routing_key=service)
 
-            async with queue.iterator() as queue_iter:
-                async for message in queue_iter:
-                    async with message.process():
+            async def process_message(message: aio_pika.IncomingMessage):
+                async with message.process(ignore_processed=True):  # Prevent auto ack
+                    try:
                         data = json.loads(message.body)
-                        await subscriber.handle_event(data)
+                        await subscriber.handle_event(data)  # Call subscriber method
+                        await message.ack()  # Acknowledge on success
+                    except Exception as process_error:
+                        logging.error(f"Error processing message: {process_error}")
+                        await message.nack(requeue=True)  # Requeue on failure
 
+            # Consume messages
+            await queue.consume(process_message)
             logging.info(f"Subscribed to service: {service}")
         except Exception as err:
-            logging.error(f"Failed to subscribe to service: {err}")
+            logging.error(f"Subscription error for {service}: {err}")
