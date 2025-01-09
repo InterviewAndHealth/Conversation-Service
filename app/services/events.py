@@ -1,10 +1,10 @@
-from app import INTERVIEWS_QUEUE
+import logging
+
+from app import INTERVIEW_QUEUE
 from app.services.broker.events import EventService
 from app.services.chat_history import ChatHistoryService
 from app.services.feedback import FeedbackService
 from app.types.communications import EventType
-
-import logging
 
 
 class EventsService:
@@ -32,7 +32,7 @@ class EventsService:
             ]
 
             await EventService.publish(
-                INTERVIEWS_QUEUE,
+                INTERVIEW_QUEUE,
                 EventService.build_request_payload(
                     type=EventType.INTERVIEW_DETAILS,
                     data={

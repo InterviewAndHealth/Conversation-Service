@@ -11,7 +11,6 @@ from app.services.broker import Broker, EventService, RPCService
 from app.services.events import EventsService
 from app.services.redis import RedisService
 
-
 logging.basicConfig(level=logging.INFO, format="%(levelname)s:\t  %(message)s")
 logging.getLogger("uvicorn.access").addFilter(
     lambda record: "GET / " not in record.getMessage()

@@ -6,7 +6,7 @@ from langchain_core.runnables.utils import ConfigurableFieldSpec
 from app import (
     FEEDBACK_DELAY,
     INTERVIEW_DURATION,
-    INTERVIEWS_QUEUE,
+    INTERVIEW_QUEUE,
     SCHEDULER_QUEUE,
     SERVICE_QUEUE,
 )
@@ -107,7 +107,7 @@ class ChatService:
                 ),
             ),
             EventService.publish(
-                INTERVIEWS_QUEUE,
+                INTERVIEW_QUEUE,
                 EventService.build_request_payload(
                     type=EventType.INTERVIEW_STARTED,
                     data={"interviewId": self.interview_id},
@@ -120,7 +120,7 @@ class ChatService:
                     data={
                         "id": f"interview_completed_{self.interview_id}",
                         "seconds": INTERVIEW_DURATION * 60,
-                        "service": INTERVIEWS_QUEUE,
+                        "service": INTERVIEW_QUEUE,
                         "type": EventType.INTERVIEW_COMPLETED,
                         "data": {"interviewId": self.interview_id},
                     },
@@ -155,7 +155,7 @@ class ChatService:
                     data={
                         "id": f"interview_completed_{self.interview_id}",
                         "seconds": 1,
-                        "service": INTERVIEWS_QUEUE,
+                        "service": INTERVIEW_QUEUE,
                         "type": EventType.INTERVIEW_COMPLETED,
                         "data": {"interviewId": self.interview_id},
                     },

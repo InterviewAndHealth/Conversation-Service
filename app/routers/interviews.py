@@ -3,9 +3,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
-from app import ENV, INTERVIEWS_RPC, USERS_RPC
+from app import INTERVIEW_RPC, JOB_RPC, USER_RPC
 from app.dependencies import authorize
-from app.services.aws import AwsService
 from app.services.broker import RPCService
 from app.services.chat import ChatService
 from app.services.chat_history import ChatHistoryService
@@ -33,13 +32,13 @@ router = APIRouter(
     tags=["Conversations"],
 )
 
-aws_service = AwsService()
-
 
 @router.post("/start/{interview_id}", responses={**BadRequestResponse})
 @timer
 async def start_conversation(
-    interview_id: str, user_id: Annotated[str, Depends(authorize)]
+    interview_id: str,
+    user_id: Annotated[str, Depends(authorize)],
+    is_job: bool = False,
 ) -> MessageResponse:
 
     if user_id == "user_id":
@@ -53,14 +52,14 @@ async def start_conversation(
     else:
         interview_details, resume_link = await asyncio.gather(
             RPCService.request(
-                INTERVIEWS_RPC,
+                INTERVIEW_RPC,
                 RPCService.build_request_payload(
                     type=RPCPayloadType.GET_INTERVIEW_DETAILS,
                     data={"interviewId": interview_id},
                 ),
             ),
             RPCService.request(
-                USERS_RPC,
+                USER_RPC,
                 RPCService.build_request_payload(
                     type=RPCPayloadType.GET_USER_RESUME,
                     data={"userId": user_id},

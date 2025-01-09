@@ -6,7 +6,6 @@ from langchain_ollama import ChatOllama
 from app import GROQ_API_KEY, GROQ_MODEL, MODEL, USE_GROQ
 from app.services.system_messages import interview_guidelines
 
-
 _llm = (
     ChatGroq(model=GROQ_MODEL, api_key=GROQ_API_KEY)
     if USE_GROQ
