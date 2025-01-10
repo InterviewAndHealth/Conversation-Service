@@ -1,16 +1,11 @@
-import asyncio
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
-from app import INTERVIEW_RPC, JOB_RPC, USER_RPC
 from app.dependencies import authorize
-from app.services.broker import RPCService
 from app.services.chat import ChatService
-from app.services.chat_history import ChatHistoryService
 from app.services.feedback import FeedbackService
-from app.services.redis import RedisService
-from app.types.communications import RPCPayloadType
+from app.services.interview import InterviewService
 from app.types.conversation_response import (
     ConversationResponse,
     InterviewDetailsResponse,
@@ -21,10 +16,11 @@ from app.types.message_response import MessageResponse
 from app.utils.errors import (
     BadRequestException400,
     BadRequestResponse,
+    InternalServerErrorException500,
+    InternalServerErrorResponse,
     NotFoundException404,
     NotFoundResponse,
 )
-from app.utils.pdf_text import fetch_pdf_text
 from app.utils.timer import timer
 
 router = APIRouter(
@@ -33,58 +29,23 @@ router = APIRouter(
 )
 
 
-@router.post("/start/{interview_id}", responses={**BadRequestResponse})
+@router.post(
+    "/start/{interview_id}",
+    responses={
+        **BadRequestResponse,
+        **NotFoundResponse,
+        **InternalServerErrorResponse,
+    },
+)
 @timer
 async def start_conversation(
     interview_id: str,
     user_id: Annotated[str, Depends(authorize)],
     is_job: bool = False,
 ) -> MessageResponse:
-
-    if user_id == "user_id":
-        interview_details = {
-            "data": {
-                "userid": "user_id",
-                "jobdescription": "We are looking for a frontend developer. The candidate should have experience with React.",
-            }
-        }
-        resume_link = {"data": "Gopal Saraf\nFrontend Developer"}
-    else:
-        interview_details, resume_link = await asyncio.gather(
-            RPCService.request(
-                INTERVIEW_RPC,
-                RPCService.build_request_payload(
-                    type=RPCPayloadType.GET_INTERVIEW_DETAILS,
-                    data={"interviewId": interview_id},
-                ),
-            ),
-            RPCService.request(
-                USER_RPC,
-                RPCService.build_request_payload(
-                    type=RPCPayloadType.GET_USER_RESUME,
-                    data={"userId": user_id},
-                ),
-            ),
-        )
-
-    if not interview_details or not resume_link:
-        raise NotFoundException404("Interview not found.")
-
-    user_id_from_interview = interview_details.get("data").get("userid")
-    if user_id != user_id_from_interview:
-        raise BadRequestException400("User is not authorized for this interview.")
-
-    job_description = interview_details.get("data").get("jobdescription")
-
-    resume = (
-        resume_link.get("data")
-        if user_id == "user_id"
-        else await fetch_pdf_text(resume_link.get("data"))
-    )
-
-    RedisService.set_user(interview_id, user_id)
-    RedisService.set_job_description(interview_id, job_description)
-    RedisService.set_resume(interview_id, resume)
+    interview_service = InterviewService(interview_id, user_id, is_job)
+    if not await interview_service.initialize():
+        raise InternalServerErrorException500()
 
     chat_service = ChatService(interview_id, user_id)
 
@@ -92,6 +53,7 @@ async def start_conversation(
         raise BadRequestException400("Interview already started.")
 
     chat_service.set_active()
+    await interview_service.publish_interview_started()
     return await chat_service.start()
 
 
@@ -115,23 +77,25 @@ async def continue_conversation(
 @timer
 async def end_conversation(
     interview_id: str, user_id: Annotated[str, Depends(authorize)]
-) -> None:
+):
+    interview_service = InterviewService(interview_id, user_id)
     chat_service = ChatService(interview_id, user_id)
-    return await chat_service.end()
+
+    await interview_service.publish_interview_completed()
+    await chat_service.end()
+
+    return "Interview ended."
 
 
 @router.get("/details/{interview_id}", responses={**NotFoundResponse})
 async def get_interview_details(
     interview_id: str, user_id: Annotated[str, Depends(authorize)]
 ) -> InterviewDetailsResponse:
-    messages = ChatHistoryService.get_messages(interview_id)
-
-    if not messages or len(messages) == 0:
+    messages = InterviewService(interview_id, user_id).get_conversation()
+    if not messages:
         raise NotFoundException404("Interview not found.")
 
-    messages = messages[1:]  # Remove start message
     conversation = [ConversationResponse.from_message(message) for message in messages]
-
     return InterviewDetailsResponse(
         interview_id=interview_id, conversations=conversation
     )

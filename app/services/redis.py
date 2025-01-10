@@ -35,6 +35,9 @@ class RedisService:
         FEEDBACK = "feedback"
         """Namespace for feedback-related keys."""
 
+        INTERVIEW_TYPE = "interview_type"
+        """Namespace for interview type-related keys."""
+
     class Status(StrEnum):
         """Status values for Redis keys."""
 
@@ -43,6 +46,15 @@ class RedisService:
 
         INACTIVE = "inactive"
         """Inactive status."""
+
+    class InterviewType(StrEnum):
+        """Interview type values for Redis keys."""
+
+        NORMAL = "normal"
+        """Normal interview type."""
+
+        JOB = "job"
+        """Job interview type."""
 
     @staticmethod
     def connect():
@@ -157,3 +169,18 @@ class RedisService:
             .json()
             .get(f"{RedisService.Namespace.FEEDBACK}:{key}")
         )
+
+    @staticmethod
+    def set_interview_type(key, value: InterviewType) -> None:
+        """Set an interview type-related value in Redis."""
+        RedisService.setKeyWithNamespace(
+            RedisService.Namespace.INTERVIEW_TYPE, key, value
+        )
+
+    @staticmethod
+    def get_interview_type(key) -> InterviewType:
+        """Get an interview type-related value from Redis."""
+        raw = RedisService.getKeyWithNamespace(
+            RedisService.Namespace.INTERVIEW_TYPE, key
+        )
+        return raw.decode("utf-8") if raw else RedisService.InterviewType.NORMAL

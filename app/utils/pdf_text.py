@@ -1,3 +1,4 @@
+import logging
 from io import BytesIO
 
 import aiohttp
@@ -13,14 +14,19 @@ async def fetch_pdf(pdf_url):
 
         return pdf_content
     except aiohttp.ClientError as e:
-        return f"Error downloading the PDF: {e}"
+        logging.error(f"Error downloading the PDF: {e}")
+        return
 
 
 async def fetch_pdf_text(pdf_url):
+    logging.info(f"Fetching PDF text from: {pdf_url}")
     try:
         pdf_content = await fetch_pdf(pdf_url)
         if isinstance(pdf_content, str):
             return pdf_content
+
+        if not pdf_content:
+            return
 
         pdf_file = BytesIO(pdf_content)
         reader = PdfReader(pdf_file)
@@ -32,4 +38,5 @@ async def fetch_pdf_text(pdf_url):
 
         return text
     except Exception as e:
-        return f"Error processing the PDF: {e}"
+        logging.error(f"Error processing the PDF: {e}")
+        return
