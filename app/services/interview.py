@@ -186,6 +186,7 @@ class InterviewService:
                 type=EventType.INTERVIEW_DETAILS,
                 data={
                     "interviewId": self.interview_id,
+                    "interview_id": self.interview_id,
                     "transcript": messages,
                     "feedback": feedback,
                 },

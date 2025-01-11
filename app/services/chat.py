@@ -1,12 +1,7 @@
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_core.runnables.utils import ConfigurableFieldSpec
 
-from app import (
-    FEEDBACK_DELAY,
-    INTERVIEW_DURATION,
-    SCHEDULER_QUEUE,
-    SERVICE_QUEUE,
-)
+from app import FEEDBACK_DELAY, INTERVIEW_DURATION, SCHEDULER_QUEUE, SERVICE_QUEUE
 from app.services.broker.events import EventService
 from app.services.chain import ChainService
 from app.services.chat_history import ChatHistoryService
