@@ -40,6 +40,24 @@ class EventService:
             "data": data,
         }
 
+    _publishChannel = None
+
+    @staticmethod
+    async def _get_publish_channel():
+        """Return a channel and exchange for publishing events"""
+        if EventService._publishChannel:
+            return EventService._publishChannel
+
+        connection = await Broker.connect()
+        channel = await connection.channel()
+        exchange = await channel.declare_exchange(
+            EXCHANGE_NAME,
+            aio_pika.ExchangeType.DIRECT,
+            durable=True,
+        )
+        EventService._publishChannel = exchange
+        return exchange
+
     @staticmethod
     async def publish(service: str, data: dict):
         """
@@ -61,11 +79,12 @@ class EventService:
         >>> await EventService.publish("service", {"key": "value"})
         """
         try:
-            exchange = await Broker.channel()
+            exchange = await EventService._get_publish_channel()
             message = json.dumps(data)
             await exchange.publish(
                 aio_pika.Message(body=message.encode()), routing_key=service
             )
+            logging.info(f"Published event to {service}")
         except Exception as err:
             logging.error(f"Failed to publish event: {err}")
 
@@ -94,27 +113,33 @@ class EventService:
         ...
         >>> await EventService.subscribe("service", Subscriber)
         """
-
         try:
-            # Connect to RabbitMQ and declare queue
-            channel = await Broker.connect()
-            queue = await channel.declare_queue(
-                SERVICE_QUEUE, durable=True, arguments={"x-queue-type": "quorum"}
+            connection = await Broker.connect()
+            channel = await connection.channel()
+            await channel.set_qos(prefetch_count=1)
+            exchange = await channel.declare_exchange(
+                EXCHANGE_NAME,
+                aio_pika.ExchangeType.DIRECT,
+                durable=True,
             )
-            await queue.bind(exchange=EXCHANGE_NAME, routing_key=service)
+            queue = await channel.declare_queue(
+                SERVICE_QUEUE,
+                durable=True,
+                arguments={"x-queue-type": "quorum"},
+            )
+            await queue.bind(exchange=exchange, routing_key=service)
 
             async def process_message(message: aio_pika.IncomingMessage):
-                async with message.process(ignore_processed=True):  # Prevent auto ack
+                async with message.process(ignore_processed=True):
                     try:
                         data = json.loads(message.body)
-                        await subscriber.handle_event(data)  # Call subscriber method
-                        await message.ack()  # Acknowledge on success
+                        await subscriber.handle_event(data)
+                        await message.ack()
                     except Exception as process_error:
                         logging.error(f"Error processing message: {process_error}")
-                        await message.nack(requeue=True)  # Requeue on failure
+                        await message.nack(requeue=True)
 
-            # Consume messages
-            await queue.consume(process_message)
+            await queue.consume(process_message, no_ack=False)
             logging.info(f"Subscribed to service: {service}")
         except Exception as err:
             logging.error(f"Subscription error for {service}: {err}")

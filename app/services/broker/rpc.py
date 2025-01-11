@@ -71,10 +71,12 @@ class RPCService:
         >>> RPCService.request("service", {"key": "value"})
         """
         correlation_id = str(uuid.uuid4())
-        channel = await Broker.connect()
-        queue = await channel.declare_queue("", exclusive=True, auto_delete=True)
 
         try:
+            connection = await Broker.connect()
+            channel = await connection.channel()
+            queue = await channel.declare_queue("", exclusive=True, auto_delete=True)
+
             future = asyncio.get_event_loop().create_future()
 
             async def on_response(message: aio_pika.IncomingMessage):
@@ -105,6 +107,7 @@ class RPCService:
             try:
                 await queue.cancel(consumer_tag)
                 await queue.delete()
+                await channel.close()
             except Exception as delete_err:
                 logging.error(f"Failed to delete queue: {delete_err}")
 
@@ -131,10 +134,11 @@ class RPCService:
         ...
         >>> RPCService.respond(Responder)
         """
-
         try:
-            channel = await Broker.connect()
-            queue = await channel.declare_queue(RPC_QUEUE)
+            connection = await Broker.connect()
+            channel = await connection.channel()
+            queue = await channel.declare_queue(RPC_QUEUE, auto_delete=True)
+            logging.info(f"Responding to RPC requests: {RPC_QUEUE}")
 
             async with queue.iterator() as queue_iter:
                 async for message in queue_iter:
@@ -150,3 +154,8 @@ class RPCService:
                         )
         except Exception as err:
             logging.error(f"Failed to respond to request: {err}")
+        finally:
+            try:
+                await channel.close()
+            except Exception as close_err:
+                logging.error(f"Failed to close channel: {close_err}")

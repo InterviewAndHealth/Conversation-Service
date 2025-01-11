@@ -21,7 +21,6 @@ logging.getLogger("uvicorn.access").addFilter(
 async def lifespan(_: FastAPI):
     RedisService.connect()
     await Broker.connect()
-    await Broker.channel()
     logging.info(f"Serving in {ENV} environment")
 
     tasks = [
@@ -34,7 +33,7 @@ async def lifespan(_: FastAPI):
 
     [task.cancel() for task in tasks]
     RedisService.disconnect()
-    await Broker.disconnect()
+    await Broker.close()
 
 
 app = FastAPI(
